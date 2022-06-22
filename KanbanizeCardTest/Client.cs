@@ -126,6 +126,16 @@ namespace KanbanizeCardTest
 
 
         // ==========================================================================================
+        public Response<TaskDetails[]> GetAllTask()
+        {
+            string function = "get_all_tasks";
+            string body = $"{{\"boardid\":{BoardId}}}";
+
+            return SendRequest<TaskDetails[]>(function, body: body);
+        }
+
+
+        // ==========================================================================================
         public Response<CreateTaskResponse> CreateTask(object task)
         {
             string function = "create_new_task";
@@ -149,6 +159,25 @@ namespace KanbanizeCardTest
             try
             {
                 // If the task was deleted, the response will be 'true' otherwise will be an error
+                result = SendRequest<bool>(function, body: body);
+            }
+            catch(WebException) {}
+
+            return result;
+        }
+
+
+        // ==========================================================================================
+        public Response<bool> MoveTask(int taskId, int position)
+        {
+            string function = "move_task";
+            string body = $"{{\"boardid\":{BoardId},\"taskid\":{taskId},\"position\":{position}}}";
+
+            Response<bool> result = new Response<bool>();
+
+            try
+            {
+                // If the task was exist, the response will be 'true' otherwise will be an error
                 result = SendRequest<bool>(function, body: body);
             }
             catch(WebException) {}

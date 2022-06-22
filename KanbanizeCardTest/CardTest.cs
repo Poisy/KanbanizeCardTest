@@ -14,11 +14,13 @@ namespace KanbanizeCardTest
         public static IEnumerable<object[]> Tasks =>
         new List<object[]>
         {
-            new object[] { new { title = "CardDemo3", position = "1" }, 0 },
-            new object[] { new { title = "CardDemo4", position = "3", color = "#34a97b", priority = "Low" }, 1 },
-            new object[] { new { title = "CardDemo2", position = "2", deadline = "2023-01-13", color = "#0015bb", priority = "High" }, 2 },
-            new object[] { new { title = "CardDemo1", position = "0" }, 3 },
+            new object[] { new { title = "CardDemo3", position = "1", description = "2" }, 0 },
+            new object[] { new { title = "CardDemo4", position = "3", description = "3", color = "#34a97b", priority = "Low" }, 1 },
+            new object[] { new { title = "CardDemo2", position = "2", description = "1", deadline = "2023-01-13", color = "#0015bb", priority = "High" }, 2 },
+            new object[] { new { title = "CardDemo1", position = "0", description = "0" }, 3 },
         };
+
+        public static List<int> Ids { get; set; } = new List<int>();
         #endregion
 
 
@@ -41,11 +43,13 @@ namespace KanbanizeCardTest
         #region Tests
         [Theory]
         [MemberData(nameof(Tasks))]
-        public void TaskTest(object task, object iteration)
+        public void A_Create_Get_Compare_Task(object task, object iteration)
         {
             // Creates the task
             var createResponse = Client.CreateTask(task);
-
+            Console.WriteLine($"Created Task [{createResponse.Data.Id}]!");
+            Ids.Add(createResponse.Data.Id);
+            
 
             // Get's the task by id
             var getResponse = Client.GetTask(createResponse.Data.Id);
@@ -78,19 +82,54 @@ namespace KanbanizeCardTest
                     }
 
                     Assert.Equal(expected, actual);
+                    Console.WriteLine($"Task [{createResponse.Data.Id}] is correct!");
                 }
             }
+        }
 
-            // TODO: Update Position
+        
+        [Fact]
+        public void B_Move_Task()
+        {
+            Console.WriteLine($"Tasks are unordered!");
+            int task2Id = Ids[2];
+
+            bool result = Client.MoveTask(task2Id, 1).Data;
+
+            Assert.True(result);
+            Console.WriteLine($"Task [{task2Id}] moved to possition 1!");
+
+            var allTasks = Client.GetAllTask().Data;
+
+            foreach (var id in Ids)
+            {
+                var task = allTasks.FirstOrDefault(t => Convert.ToInt32(t.Taskid) == id);
+
+                if (task != null)
+                {
+                    int position = Convert.ToInt32(task.Description);
+                    Assert.Equal(Convert.ToInt32(task.Position), position);
+                }
+            }
+            Console.WriteLine($"Tasks are now ordered!");
+        }
 
 
-            // Deletes the created task
-            var deleteResponse = Client.DeleteTask(createResponse.Data.Id);
-            Assert.True(deleteResponse.Data);
+        [Fact]
+        public void C_Delete_Task()
+        {
+            foreach (var id in Ids)
+            {
+                // Deletes the created task
+                var deleteResponse = Client.DeleteTask(id);
+                Assert.True(deleteResponse.Data);
 
-            // Checks if the task still exist (this checking is costing us few seconds!)
-            deleteResponse = Client.DeleteTask(createResponse.Data.Id);
-            Assert.False(deleteResponse.Data);
+                // Checks if the task still exist (this)
+                deleteResponse = Client.DeleteTask(id);
+                Assert.False(deleteResponse.Data); 
+
+                Console.WriteLine($"Task [{id}] is deleted!"); 
+            }
         }
         #endregion
     }
